@@ -39,7 +39,7 @@ export default function Home() {
         </main>
         
         <footer className="mt-6 text-center text-pink-300/70 text-sm">
-          <p>SynthVibe - Phase 1 Implementation</p>
+          <p>SynthVibe - Make-In 04/05/2025</p>
         </footer>
       </div>
     </div>
