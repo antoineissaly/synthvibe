@@ -38,10 +38,13 @@ export const modeEffects: ModeEffectConfig[] = [
       if (effect instanceof Tone.Filter) {
         // Map 0-100 to 100-5000 Hz (logarithmic)
         const freq = Math.pow(10, mapRange(value, 0, 100, 2, 3.7));
-        effect.frequency.value = freq;
+        const q = mapRange(value, 0, 100, 1, 10);
         
-        // Increase resonance with value
-        effect.Q.value = mapRange(value, 0, 100, 1, 10);
+        // Use set method for all parameters
+        effect.set({
+          frequency: freq,
+          Q: q
+        });
       }
     }
   },
@@ -62,8 +65,11 @@ export const modeEffects: ModeEffectConfig[] = [
     updateEffect: (effect, value) => {
       if (effect instanceof Tone.Chorus) {
         // Adjust chorus parameters based on value
-        effect.depth.value = mapRange(value, 0, 100, 0.1, 0.9);
-        effect.frequency.value = mapRange(value, 0, 100, 0.5, 4);
+        // Use set method for all parameters to handle both Signal and number types
+        effect.set({
+          depth: mapRange(value, 0, 100, 0.1, 0.9),
+          frequency: mapRange(value, 0, 100, 0.5, 4)
+        });
         effect.wet.value = mapRange(value, 0, 100, 0.1, 0.8);
       }
     }
@@ -82,8 +88,10 @@ export const modeEffects: ModeEffectConfig[] = [
     updateEffect: (effect, value) => {
       if (effect instanceof Tone.PingPongDelay) {
         // Adjust delay parameters based on value
-        effect.delayTime.value = mapRange(value, 0, 100, 0.1, 0.5);
-        effect.feedback.value = mapRange(value, 0, 100, 0.1, 0.7);
+        effect.set({
+          delayTime: mapRange(value, 0, 100, 0.1, 0.5),
+          feedback: mapRange(value, 0, 100, 0.1, 0.7)
+        });
         effect.wet.value = mapRange(value, 0, 100, 0.1, 0.8);
       }
     }
@@ -120,8 +128,10 @@ export const modeEffects: ModeEffectConfig[] = [
     updateEffect: (effect, value) => {
       if (effect instanceof Tone.AutoFilter) {
         // Adjust autofilter parameters based on value
-        effect.frequency.value = mapRange(value, 0, 100, 0.1, 2);
-        effect.depth.value = mapRange(value, 0, 100, 0.2, 0.9);
+        effect.set({
+          frequency: mapRange(value, 0, 100, 0.1, 2),
+          depth: mapRange(value, 0, 100, 0.2, 0.9)
+        });
         effect.wet.value = mapRange(value, 0, 100, 0.1, 0.8);
       }
     }
