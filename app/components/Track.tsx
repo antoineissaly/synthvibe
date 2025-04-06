@@ -126,18 +126,16 @@ const Track: React.FC<TrackProps> = ({ trackNumber }) => {
     console.log(`Track ${trackNumber} playback state: isPlaying=${isPlaying}, isActive=${track.isActive}, isMuted=${track.isMuted}`);
     
     try {
+      // Since we're using sync(), we don't need to start/stop the player directly
+      // Instead, we control the volume to mute/unmute the track
       if (isPlaying && track.isActive && !track.isMuted) {
-        // Check if player is already playing to avoid errors
-        if (!playerRef.current.state || playerRef.current.state !== "started") {
-          console.log(`Starting track ${trackNumber}`);
-          playerRef.current.start();
-        }
+        // Set volume to normal level
+        playerRef.current.volume.value = linearToDecibels(track.sweep);
+        console.log(`Track ${trackNumber} active and unmuted`);
       } else {
-        // Check if player is already stopped to avoid errors
-        if (playerRef.current.state === "started") {
-          console.log(`Stopping track ${trackNumber}`);
-          playerRef.current.stop();
-        }
+        // Mute the track by setting volume to -Infinity
+        playerRef.current.volume.value = -Infinity;
+        console.log(`Track ${trackNumber} muted or inactive`);
       }
     } catch (error) {
       console.error(`Error controlling playback for track ${trackNumber}:`, error);

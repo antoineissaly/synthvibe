@@ -100,6 +100,9 @@ export const createTrackPlayer = async (
     // Wait for the player to load
     await player.load(filePath);
     
+    // Sync player with Tone.Transport
+    player.sync().start(0);
+    
     // Apply waveform shaping based on segment
     const waveform = segment === 'A' ? 'sine' : 
                     segment === 'B' ? 'square' : 
@@ -143,6 +146,9 @@ export const createTrackPlayer = async (
     ]);
     
     fallbackPlayer.buffer = fallbackBuffer;
+    
+    // Sync fallback player with Tone.Transport
+    fallbackPlayer.sync().start(0);
     
     return fallbackPlayer;
   }
