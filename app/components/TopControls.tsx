@@ -139,12 +139,19 @@ const TopControls: React.FC = () => {
         className="w-24 h-24 rounded-full border-2 border-cyan-500/50 bg-black/50 flex items-center justify-center neon-border glow-effect"
         onClick={handlePlaybackToggle}
       >
-        <div className={`${isPlaying 
-          ? 'w-4 h-10 bg-cyan-400' 
-          : 'w-0 h-0 border-t-8 border-b-8 border-l-12 border-t-transparent border-b-transparent border-l-cyan-400 ml-1'}`}>
-          {isPlaying && <span className="sr-only">Pause</span>}
-          {!isPlaying && <span className="sr-only">Play</span>}
-        </div>
+        {isPlaying ? (
+          // Pause icon - two vertical bars
+          <div className="flex gap-2">
+            <div className="w-4 h-12 bg-cyan-400"></div>
+            <div className="w-4 h-12 bg-cyan-400"></div>
+            <span className="sr-only">Pause</span>
+          </div>
+        ) : (
+          // Play icon - larger triangle
+          <div className="w-0 h-0 border-t-[24px] border-b-[24px] border-l-[36px] border-t-transparent border-b-transparent border-l-cyan-400 ml-2">
+            <span className="sr-only">Play</span>
+          </div>
+        )}
       </button>
       
       {/* BPM Controls */}
