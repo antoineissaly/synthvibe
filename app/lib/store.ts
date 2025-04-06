@@ -41,10 +41,13 @@ interface SynthVibeState {
   // Control states
   buildUpActive: boolean;
   dropActive: boolean;
+  buildUpProgress: number;
+  isDropReady: boolean;
   
   // Control actions
   triggerBuildUp: () => void;
   triggerDrop: () => void;
+  updateBuildUpProgress: (progress: number) => void;
 }
 
 // Create the store
@@ -136,17 +139,52 @@ export const useSynthVibeStore = create<SynthVibeState>((set) => ({
   // Control states
   buildUpActive: false,
   dropActive: false,
+  buildUpProgress: 0,
+  isDropReady: false,
   
   // Control actions
   triggerBuildUp: () => {
     console.log('Build Up triggered!');
-    set({ buildUpActive: true, dropActive: false });
-    // This will be implemented with actual Tone.js effects in later phases
+    set({ 
+      buildUpActive: true, 
+      dropActive: false,
+      buildUpProgress: 0,
+      isDropReady: false
+    });
+    
+    // Start the build-up progress
+    const interval = setInterval(() => {
+      set((state) => {
+        const newProgress = state.buildUpProgress + 2;
+        
+        // When progress reaches 100, make drop ready
+        if (newProgress >= 100) {
+          clearInterval(interval);
+          return { 
+            buildUpProgress: 100,
+            isDropReady: true
+          };
+        }
+        
+        return { buildUpProgress: newProgress };
+      });
+    }, 100);
   },
   
   triggerDrop: () => {
     console.log('Drop triggered!');
-    set({ dropActive: true, buildUpActive: false });
-    // This will be implemented with actual Tone.js effects in later phases
-  }
+    set({ 
+      dropActive: true, 
+      buildUpActive: false,
+      buildUpProgress: 0,
+      isDropReady: false
+    });
+    
+    // Reset drop active state after 2 seconds
+    setTimeout(() => {
+      set({ dropActive: false });
+    }, 2000);
+  },
+  
+  updateBuildUpProgress: (progress) => set({ buildUpProgress: progress })
 }));

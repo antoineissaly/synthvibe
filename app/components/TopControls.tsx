@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import * as Tone from 'tone';
 import { useSynthVibeStore } from '../lib/store';
+import { executeBuildUp, executeDrop, resetDropEffects } from '../utils/dropEffects';
 
 /**
  * Top controls component for playback, BPM, loop visualization, and effect buttons
@@ -11,11 +12,14 @@ const TopControls: React.FC = () => {
   const bpm = useSynthVibeStore(state => state.bpm);
   const buildUpActive = useSynthVibeStore(state => state.buildUpActive);
   const dropActive = useSynthVibeStore(state => state.dropActive);
+  const buildUpProgress = useSynthVibeStore(state => state.buildUpProgress);
+  const isDropReady = useSynthVibeStore(state => state.isDropReady);
   const togglePlayback = useSynthVibeStore(state => state.togglePlayback);
   const increaseBpm = useSynthVibeStore(state => state.increaseBpm);
   const decreaseBpm = useSynthVibeStore(state => state.decreaseBpm);
   const triggerBuildUp = useSynthVibeStore(state => state.triggerBuildUp);
   const triggerDrop = useSynthVibeStore(state => state.triggerDrop);
+  const updateBuildUpProgress = useSynthVibeStore(state => state.updateBuildUpProgress);
 
   // Connect playback state to Tone.js transport
   useEffect(() => {
@@ -33,6 +37,31 @@ const TopControls: React.FC = () => {
     if (!isAudioReady) return;
     Tone.Transport.bpm.value = bpm;
   }, [bpm, isAudioReady]);
+  
+  // Execute build-up effects
+  useEffect(() => {
+    if (buildUpActive) {
+      executeBuildUp(buildUpProgress);
+      
+      // Manual progress update for testing
+      const manualProgressInterval = setInterval(() => {
+        updateBuildUpProgress(Math.min(buildUpProgress + 1, 100));
+      }, 50);
+      
+      return () => {
+        clearInterval(manualProgressInterval);
+      };
+    } else {
+      resetDropEffects();
+    }
+  }, [buildUpActive, buildUpProgress, updateBuildUpProgress]);
+  
+  // Execute drop effects
+  useEffect(() => {
+    if (dropActive) {
+      executeDrop();
+    }
+  }, [dropActive]);
   
   // Handle playback toggle
   const handlePlaybackToggle = () => {
@@ -82,9 +111,25 @@ const TopControls: React.FC = () => {
         </div>
       </div>
       
-      {/* Loop Visualizer */}
-      <div className="flex-1 border-2 border-purple-500/50 bg-black/50 rounded-md h-24 flex items-center justify-center neon-border">
+      {/* Loop Visualizer with Build-up Progress */}
+      <div className="flex-1 border-2 border-purple-500/50 bg-black/50 rounded-md h-24 flex flex-col items-center justify-center neon-border relative overflow-hidden">
+        {buildUpActive && (
+          <div className="absolute bottom-0 left-0 h-1 bg-gradient-to-r from-cyan-500 to-pink-500" 
+               style={{ width: `${buildUpProgress}%` }}></div>
+        )}
+        
+        {/* Screen flash effect for drop */}
+        {dropActive && (
+          <div className="absolute inset-0 bg-white/30 animate-flash"></div>
+        )}
+        
         <span className="text-purple-300 neon-text">Loop visualizer</span>
+        
+        {buildUpActive && (
+          <div className="mt-2 text-xs text-cyan-300">
+            Build-up: {buildUpProgress}%
+          </div>
+        )}
       </div>
       
       {/* BUILD UP Button */}
@@ -106,13 +151,15 @@ const TopControls: React.FC = () => {
         className={`w-24 h-24 rounded-full border-2 flex items-center justify-center font-bold text-sm glow-effect
           ${dropActive 
             ? 'bg-red-900/50 border-red-400 text-red-300 neon-border' 
-            : 'bg-black/50 border-pink-500/50 text-pink-300 hover:border-pink-400'
+            : isDropReady
+              ? 'bg-pink-900/30 border-pink-400 text-pink-300 hover:border-pink-400 animate-pulse'
+              : 'bg-black/50 border-pink-500/50 text-pink-300 hover:border-pink-400'
           }
           transition-colors disabled:opacity-50 disabled:cursor-not-allowed`}
-        disabled={!isAudioReady}
+        disabled={!isAudioReady || (!isDropReady && !dropActive)}
         onClick={triggerDrop}
       >
-        <span className={dropActive ? 'neon-text' : ''}>DROP</span>
+        <span className={dropActive || isDropReady ? 'neon-text' : ''}>DROP</span>
       </button>
     </div>
   );

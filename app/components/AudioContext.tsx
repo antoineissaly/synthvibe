@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
-import { useToneSetup } from '../hooks/useToneSetup';
 import { useSynthVibeStore } from '../lib/store';
+import { initializeDropEffects, cleanupDropEffects } from '../utils/dropEffects';
+import { useToneSetup } from '../hooks/useToneSetup';
 
 /**
  * AudioContext component that provides a button to initialize the Tone.js audio context
@@ -9,6 +10,28 @@ import { useSynthVibeStore } from '../lib/store';
 const AudioContext: React.FC = () => {
   const { isAudioStarted, isAudioReady, startAudio } = useToneSetup();
   const setAudioReady = useSynthVibeStore(state => state.setAudioReady);
+  
+  // Initialize drop effects when audio is ready
+  useEffect(() => {
+    if (isAudioReady) {
+      // Initialize drop effects
+      const setupEffects = async () => {
+        try {
+          await initializeDropEffects();
+          console.log('Drop effects initialized successfully');
+        } catch (error) {
+          console.error('Failed to initialize drop effects:', error);
+        }
+      };
+      
+      setupEffects();
+      
+      // Clean up effects when component unmounts
+      return () => {
+        cleanupDropEffects();
+      };
+    }
+  }, [isAudioReady]);
   
   // Update the global store when audio is ready
   useEffect(() => {
