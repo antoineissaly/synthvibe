@@ -80,12 +80,27 @@ const Track: React.FC<TrackProps> = ({ trackNumber }) => {
   useEffect(() => {
     if (!playerRef.current || !isLoaded || !track) return;
     
-    if (isPlaying && track.isActive && !track.isMuted) {
-      playerRef.current.start();
-    } else {
-      playerRef.current.stop();
+    // Log for debugging
+    console.log(`Track ${trackNumber} playback state: isPlaying=${isPlaying}, isActive=${track.isActive}, isMuted=${track.isMuted}`);
+    
+    try {
+      if (isPlaying && track.isActive && !track.isMuted) {
+        // Check if player is already playing to avoid errors
+        if (!playerRef.current.state || playerRef.current.state !== "started") {
+          console.log(`Starting track ${trackNumber}`);
+          playerRef.current.start();
+        }
+      } else {
+        // Check if player is already stopped to avoid errors
+        if (playerRef.current.state === "started") {
+          console.log(`Stopping track ${trackNumber}`);
+          playerRef.current.stop();
+        }
+      }
+    } catch (error) {
+      console.error(`Error controlling playback for track ${trackNumber}:`, error);
     }
-  }, [isPlaying, track, isLoaded]);
+  }, [isPlaying, track, isLoaded, trackNumber]);
   
   // Handle filter (timbre) changes
   useEffect(() => {

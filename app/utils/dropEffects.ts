@@ -32,8 +32,17 @@ export const initializeDropEffects = async () => {
   }).connect(dropReverb);
   
   // Connect the main output to our effects chain
-  Tone.Destination.disconnect();
-  Tone.Destination.connect(dropDistortion);
+  try {
+    console.log('Setting up drop effect chain');
+    // Instead of disconnecting the destination, we'll create a parallel signal path
+    // This way, the original audio path remains intact
+    const mainOutput = Tone.getDestination();
+    dropDistortion.connect(mainOutput);
+    
+    console.log('Drop effect chain connected successfully');
+  } catch (error) {
+    console.error('Error connecting drop effect chain:', error);
+  }
   
   // Create the impact sound buffer
   const impactBuffer = createImpactSound(Tone.context);
@@ -105,10 +114,21 @@ export const executeDrop = () => {
     }
   }, '+0.5');
   
-  // Briefly lower and restore master volume for the "suck" effect
-  const currentVolume = Tone.Destination.volume.value;
-  Tone.Destination.volume.value = -40;
-  Tone.Destination.volume.linearRampToValueAtTime(currentVolume, Tone.now() + 0.1);
+  // Create a more subtle "suck" effect without completely cutting the audio
+  try {
+    console.log('Executing drop effect');
+    const currentVolume = Tone.Destination.volume.value;
+    // Use a less extreme volume dip to maintain some audio
+    Tone.Destination.volume.value = currentVolume - 20;
+    Tone.Destination.volume.linearRampToValueAtTime(currentVolume, Tone.now() + 0.1);
+    
+    // Create a more pronounced impact sound
+    if (impactSound) {
+      impactSound.volume.value = -5; // Louder impact
+    }
+  } catch (error) {
+    console.error('Error executing drop effect:', error);
+  }
 };
 
 /**
@@ -154,7 +174,6 @@ export const cleanupDropEffects = () => {
     impactSound = null;
   }
   
-  // Reconnect the main output directly to the destination
-  Tone.Destination.disconnect();
-  Tone.Destination.toDestination();
+  // Clean up without disrupting the main audio path
+  console.log('Cleaning up drop effects');
 };
