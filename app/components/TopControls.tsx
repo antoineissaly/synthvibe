@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import * as Tone from 'tone';
 import { useSynthVibeStore } from '../lib/store';
 import { executeBuildUp, executeDrop, resetDropEffects } from '../utils/dropEffects';
@@ -68,14 +68,60 @@ const TopControls: React.FC = () => {
     togglePlayback();
   };
   
-  // Handle BPM changes
-  const handleIncreaseBpm = () => {
-    increaseBpm();
+  // State for tracking button press
+  const [isIncreasePressed, setIsIncreasePressed] = useState(false);
+  const [isDecreasePressed, setIsDecreasePressed] = useState(false);
+  const increaseBpmIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const decreaseBpmIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Handle BPM changes with long press support
+  const handleIncreaseBpmStart = () => {
+    setIsIncreasePressed(true);
+    increaseBpm(); // Immediate first increase
+    
+    // Start interval for continuous increase while pressed
+    increaseBpmIntervalRef.current = setInterval(() => {
+      increaseBpm();
+    }, 150); // Adjust speed as needed
   };
   
-  const handleDecreaseBpm = () => {
-    decreaseBpm();
+  const handleIncreaseBpmEnd = () => {
+    setIsIncreasePressed(false);
+    if (increaseBpmIntervalRef.current) {
+      clearInterval(increaseBpmIntervalRef.current);
+      increaseBpmIntervalRef.current = null;
+    }
   };
+  
+  const handleDecreaseBpmStart = () => {
+    setIsDecreasePressed(true);
+    decreaseBpm(); // Immediate first decrease
+    
+    // Start interval for continuous decrease while pressed
+    decreaseBpmIntervalRef.current = setInterval(() => {
+      decreaseBpm();
+    }, 150); // Adjust speed as needed
+  };
+  
+  const handleDecreaseBpmEnd = () => {
+    setIsDecreasePressed(false);
+    if (decreaseBpmIntervalRef.current) {
+      clearInterval(decreaseBpmIntervalRef.current);
+      decreaseBpmIntervalRef.current = null;
+    }
+  };
+  
+  // Clean up intervals on unmount
+  useEffect(() => {
+    return () => {
+      if (increaseBpmIntervalRef.current) {
+        clearInterval(increaseBpmIntervalRef.current);
+      }
+      if (decreaseBpmIntervalRef.current) {
+        clearInterval(decreaseBpmIntervalRef.current);
+      }
+    };
+  }, []);
 
   return (
     <div className="flex items-center gap-4 mb-8">
@@ -99,13 +145,21 @@ const TopControls: React.FC = () => {
         <div className="text-xl font-bold text-white mb-1">{bpm}</div>
         <div className="flex gap-2">
           <button 
-            className="w-0 h-0 border-l-8 border-r-8 border-b-12 border-l-transparent border-r-transparent border-b-pink-400 glow-effect"
-            onClick={handleIncreaseBpm}
+            className={`w-0 h-0 border-l-8 border-r-8 border-b-12 border-l-transparent border-r-transparent border-b-pink-400 glow-effect ${isIncreasePressed ? 'opacity-70' : ''}`}
+            onMouseDown={handleIncreaseBpmStart}
+            onMouseUp={handleIncreaseBpmEnd}
+            onMouseLeave={handleIncreaseBpmEnd}
+            onTouchStart={handleIncreaseBpmStart}
+            onTouchEnd={handleIncreaseBpmEnd}
             aria-label="Increase BPM"
           />
           <button 
-            className="w-0 h-0 border-l-8 border-r-8 border-t-12 border-l-transparent border-r-transparent border-t-pink-400 glow-effect"
-            onClick={handleDecreaseBpm}
+            className={`w-0 h-0 border-l-8 border-r-8 border-t-12 border-l-transparent border-r-transparent border-t-pink-400 glow-effect ${isDecreasePressed ? 'opacity-70' : ''}`}
+            onMouseDown={handleDecreaseBpmStart}
+            onMouseUp={handleDecreaseBpmEnd}
+            onMouseLeave={handleDecreaseBpmEnd}
+            onTouchStart={handleDecreaseBpmStart}
+            onTouchEnd={handleDecreaseBpmEnd}
             aria-label="Decrease BPM"
           />
         </div>

@@ -59,8 +59,8 @@ export const useSynthVibeStore = create<SynthVibeState>((set) => ({
   setAudioReady: (ready) => set({ isAudioReady: ready }),
   togglePlayback: () => set((state) => ({ isPlaying: !state.isPlaying })),
   setBpm: (bpm) => set({ bpm }),
-  increaseBpm: () => set((state) => ({ bpm: state.bpm + 1 })),
-  decreaseBpm: () => set((state) => ({ bpm: Math.max(60, state.bpm - 1) })),
+  increaseBpm: () => set((state) => ({ bpm: Math.min(300, state.bpm + 5) })), // Increase by 5, max 300
+  decreaseBpm: () => set((state) => ({ bpm: Math.max(60, state.bpm - 5) })),  // Decrease by 5, min 60
   
   // Initial tracks
   tracks: [
