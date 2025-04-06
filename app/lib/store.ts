@@ -96,9 +96,6 @@ export const useSynthVibeStore = create<SynthVibeState>((set) => ({
   tracks: [
     { id: 1, name: 'Track 1', isActive: true, isMuted: false, isSolo: false, segment: 'A', waveform: 'sine', timbre: 50, mode: 50, sweep: 50 },
     { id: 2, name: 'Track 2', isActive: true, isMuted: false, isSolo: false, segment: 'A', waveform: 'sine', timbre: 50, mode: 50, sweep: 50 },
-    { id: 3, name: 'Track 3', isActive: true, isMuted: false, isSolo: false, segment: 'A', waveform: 'sine', timbre: 50, mode: 50, sweep: 50 },
-    { id: 4, name: 'Track 4', isActive: true, isMuted: false, isSolo: false, segment: 'A', waveform: 'sine', timbre: 50, mode: 50, sweep: 50 },
-    { id: 5, name: 'Track 5', isActive: true, isMuted: false, isSolo: false, segment: 'A', waveform: 'sine', timbre: 50, mode: 50, sweep: 50 },
   ],
   
   // Track actions

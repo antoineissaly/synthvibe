@@ -32,7 +32,7 @@ export default function Home() {
           
           {/* Tracks Section */}
           <div>
-            {[1, 2, 3, 4, 5].map((trackNumber) => (
+            {[1, 2].map((trackNumber) => (
               <Track key={trackNumber} trackNumber={trackNumber} />
             ))}
           </div>
