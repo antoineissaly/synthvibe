@@ -14,12 +14,18 @@ const TopControls: React.FC = () => {
   const dropActive = useSynthVibeStore(state => state.dropActive);
   const buildUpProgress = useSynthVibeStore(state => state.buildUpProgress);
   const isDropReady = useSynthVibeStore(state => state.isDropReady);
+  const analyzer = useSynthVibeStore(state => state.analyzer);
   const togglePlayback = useSynthVibeStore(state => state.togglePlayback);
   const increaseBpm = useSynthVibeStore(state => state.increaseBpm);
   const decreaseBpm = useSynthVibeStore(state => state.decreaseBpm);
   const triggerBuildUp = useSynthVibeStore(state => state.triggerBuildUp);
   const triggerDrop = useSynthVibeStore(state => state.triggerDrop);
   const updateBuildUpProgress = useSynthVibeStore(state => state.updateBuildUpProgress);
+  
+  // Canvas ref for oscilloscope
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  // Animation frame ref
+  const animationFrameRef = useRef<number | null>(null);
 
   // Connect playback state to Tone.js transport
   useEffect(() => {
@@ -129,8 +135,94 @@ const TopControls: React.FC = () => {
       if (decreaseBpmIntervalRef.current) {
         clearInterval(decreaseBpmIntervalRef.current);
       }
+      
+      // Cancel any animation frame
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
     };
   }, []);
+  
+  // Oscilloscope drawing function
+  useEffect(() => {
+    if (!canvasRef.current || !analyzer || !isAudioReady) return;
+    
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    
+    // Set canvas dimensions
+    const resizeCanvas = () => {
+      const container = canvas.parentElement;
+      if (!container) return;
+      
+      // Set canvas size to match container
+      canvas.width = container.clientWidth;
+      canvas.height = container.clientHeight;
+    };
+    
+    // Initial resize
+    resizeCanvas();
+    
+    // Draw function for the oscilloscope
+    const draw = () => {
+      if (!ctx || !analyzer) return;
+      
+      // Get waveform data from analyzer
+      const waveform = analyzer.getValue() as Float32Array;
+      
+      // Clear the canvas
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      
+      // Set line style
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = isPlaying ? '#8B5CF6' : '#4B5563'; // Purple when playing, gray when paused
+      
+      // Begin drawing path
+      ctx.beginPath();
+      
+      // Calculate step size based on canvas width and waveform length
+      const sliceWidth = canvas.width / waveform.length;
+      
+      // Start at the left side
+      let x = 0;
+      
+      // Draw each point of the waveform
+      for (let i = 0; i < waveform.length; i++) {
+        // Waveform values are between -1 and 1
+        // Map to canvas height (y=0 is top, so we invert)
+        const y = (waveform[i] * canvas.height / 2) + canvas.height / 2;
+        
+        if (i === 0) {
+          ctx.moveTo(x, y);
+        } else {
+          ctx.lineTo(x, y);
+        }
+        
+        x += sliceWidth;
+      }
+      
+      // Draw the path
+      ctx.stroke();
+      
+      // Request next frame
+      animationFrameRef.current = requestAnimationFrame(draw);
+    };
+    
+    // Start animation
+    draw();
+    
+    // Handle window resize
+    window.addEventListener('resize', resizeCanvas);
+    
+    // Cleanup
+    return () => {
+      window.removeEventListener('resize', resizeCanvas);
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
+  }, [analyzer, isAudioReady, isPlaying]);
 
   return (
     <div className="flex items-center gap-4 mb-8">
@@ -192,10 +284,19 @@ const TopControls: React.FC = () => {
           <div className="absolute inset-0 bg-white/30 animate-flash"></div>
         )}
         
-        <span className="text-purple-300 neon-text">Loop visualizer</span>
+        {/* Canvas for oscilloscope */}
+        {isAudioReady ? (
+          <canvas 
+            ref={canvasRef} 
+            className="w-full h-full absolute inset-0"
+            aria-label="Audio waveform visualization"
+          />
+        ) : (
+          <span className="text-purple-300 neon-text">SYNTHVIBE</span>
+        )}
         
         {buildUpActive && (
-          <div className="mt-2 text-xs text-cyan-300">
+          <div className="mt-2 text-xs text-cyan-300 z-10 relative">
             Build-up: {buildUpProgress}%
           </div>
         )}

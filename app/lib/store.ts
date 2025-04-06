@@ -1,6 +1,6 @@
 import { create } from 'zustand';
-
 import { WaveformType, SegmentType } from '../utils/audioLoops';
+import * as Tone from 'tone';
 
 // Define the store state interface
 interface SynthVibeState {
@@ -8,6 +8,7 @@ interface SynthVibeState {
   isAudioReady: boolean;
   isPlaying: boolean;
   bpm: number;
+  analyzer: Tone.Analyser | null;
   setAudioReady: (ready: boolean) => void;
   startAudioContext: () => Promise<void>;
   togglePlayback: () => void;
@@ -57,6 +58,7 @@ export const useSynthVibeStore = create<SynthVibeState>((set) => ({
   isAudioReady: false,
   isPlaying: false,
   bpm: 120,
+  analyzer: null,
   setAudioReady: (ready) => set({ isAudioReady: ready }),
   startAudioContext: async () => {
     try {
@@ -67,8 +69,15 @@ export const useSynthVibeStore = create<SynthVibeState>((set) => ({
       await Tone.start();
       console.log('Audio context started');
       
+      // Create waveform analyzer
+      const { createWaveformAnalyzer } = await import('../utils/toneUtils');
+      const analyzer = createWaveformAnalyzer(1024);
+      
       // Update the store
-      set({ isAudioReady: true });
+      set({ 
+        isAudioReady: true,
+        analyzer
+      });
       
       // Initialize drop effects
       const { initializeDropEffects } = await import('../utils/dropEffects');

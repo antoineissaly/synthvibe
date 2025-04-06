@@ -6,6 +6,24 @@ import * as Tone from 'tone';
  */
 
 /**
+ * Create an analyzer for visualizing audio waveforms
+ * @param fftSize The FFT size for the analyzer (must be a power of 2)
+ * @returns A Tone.js analyzer instance
+ */
+export const createWaveformAnalyzer = (fftSize: number = 1024) => {
+  // Create a waveform analyzer
+  const analyzer = new Tone.Analyser({
+    type: 'waveform',
+    size: fftSize
+  });
+  
+  // Connect the master output to the analyzer
+  Tone.Destination.connect(analyzer);
+  
+  return analyzer;
+};
+
+/**
  * Create a basic synth with synthwave-like settings
  * @returns A Tone.js synth instance
  */
