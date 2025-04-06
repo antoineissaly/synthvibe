@@ -2,18 +2,31 @@ import * as Tone from 'tone';
 import { createLoop1 } from '../../public/audio/synths/loop1';
 import { createLoop2 } from '../../public/audio/synths/loop2';
 import { createLoop3 } from '../../public/audio/synths/loop3';
+import { createLoop4 } from '../../public/audio/synths/loop4';
+import { createLoop5 } from '../../public/audio/synths/loop5';
 
 // Define the available waveform types
 export type WaveformType = 'sine' | 'square' | 'sawtooth' | 'triangle';
 
 // Define the available segments
-export type SegmentType = 'A' | 'B' | 'C';
+export type SegmentType = 'A' | 'B' | 'C' | 'D' | 'E';
+
+// Define segment display names
+export const segmentNames = {
+  'A': 'Frenzy',
+  'B': 'Hotline',
+  'C': 'Soundcore',
+  'D': 'Batcave',
+  'E': 'Vibes'
+};
 
 // Map of segment to loop creator function
 const segmentLoopMap = {
   'A': createLoop1,
   'B': createLoop2,
-  'C': createLoop3
+  'C': createLoop3,
+  'D': createLoop4,
+  'E': createLoop5
 };
 
 /**

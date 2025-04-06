@@ -7,8 +7,10 @@ import {
   linearToFrequency, 
   linearToDecibels,
   WaveformType,
-  SegmentType
+  SegmentType,
+  segmentNames
 } from '../utils/audioLoops';
+import SegmentModal from './SegmentModal';
 
 interface TrackProps {
   trackNumber: number;
@@ -37,8 +39,9 @@ const Track: React.FC<TrackProps> = ({ trackNumber }) => {
   const playerRef = useRef<Tone.Player | null>(null);
   const filterRef = useRef<Tone.Filter | null>(null);
   
-  // Local state for visualizing audio
+  // Local state for visualizing audio and UI
   const [isLoaded, setIsLoaded] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   
   // Initialize audio for this track
   useEffect(() => {
@@ -101,8 +104,20 @@ const Track: React.FC<TrackProps> = ({ trackNumber }) => {
   // Available waveform types
   const waveformTypes: WaveformType[] = ['sine', 'square', 'sawtooth', 'triangle'];
   
-  // Available segments
-  const segments: SegmentType[] = ['A', 'B', 'C'];
+  // Handle segment selection
+  const handleSelectSegment = (segment: string) => {
+    setTrackSegment(track.id, segment as SegmentType);
+  };
+  
+  // Handle opening the segment modal
+  const handleOpenModal = () => {
+    setIsModalOpen(true);
+  };
+  
+  // Handle closing the segment modal
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+  };
   
   return (
     <div className="border border-purple-500/30 bg-black/30 rounded-lg p-4 mb-4 flex flex-col neon-border">
@@ -119,21 +134,26 @@ const Track: React.FC<TrackProps> = ({ trackNumber }) => {
           <span className={`font-medium ${track.isActive ? 'text-cyan-300 neon-text' : 'text-gray-400'}`}>ON</span>
         </button>
         
-        {/* Segment Selector */}
-        <div className="w-40 h-16 border border-pink-500/50 bg-black/50 rounded-md flex items-center justify-center">
-          <select 
-            className="bg-transparent text-pink-300 border-none outline-none w-full text-center"
-            value={track.segment}
-            onChange={(e) => setTrackSegment(track.id, e.target.value as SegmentType)}
-            disabled={!isAudioReady}
-          >
-            {segments.map(segment => (
-              <option key={segment} value={segment} className="bg-gray-900">
-                Segment {segment}
-              </option>
-            ))}
-          </select>
-        </div>
+        {/* Segment Selector Button */}
+        <button 
+          className={`w-40 h-16 border border-pink-500/50 bg-black/50 rounded-md flex items-center justify-center
+            ${track.segment ? 'text-pink-300 hover:bg-pink-900/30' : 'text-gray-400'}
+            ${track.segment ? 'border-pink-500/70' : 'border-pink-500/30'}`}
+          onClick={handleOpenModal}
+          disabled={!isAudioReady}
+        >
+          <span className={track.segment ? 'neon-text' : ''}>
+            {track.segment ? segmentNames[track.segment] : 'Select Segment'}
+          </span>
+        </button>
+        
+        {/* Segment Selection Modal */}
+        <SegmentModal 
+          isOpen={isModalOpen}
+          onClose={handleCloseModal}
+          onSelectSegment={handleSelectSegment}
+          currentSegment={track.segment as SegmentType}
+        />
         
         {/* Waveform Selector */}
         <div className="flex-1 h-16 border border-purple-500/50 bg-black/50 rounded-md flex items-center justify-center gap-2">
