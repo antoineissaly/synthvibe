@@ -10,6 +10,7 @@ import {
   SegmentType,
   segmentNames
 } from '../utils/audioLoops';
+import { createModeEffectChain, getModeEffect } from '../utils/modeEffects';
 import SegmentModal from './SegmentModal';
 
 interface TrackProps {
@@ -38,6 +39,8 @@ const Track: React.FC<TrackProps> = ({ trackNumber }) => {
   // Refs to store Tone.js objects
   const playerRef = useRef<Tone.Player | null>(null);
   const filterRef = useRef<Tone.Filter | null>(null);
+  const modeEffectRef = useRef<Tone.ToneAudioNode | null>(null);
+  const modeEffectUpdaterRef = useRef<((value: number) => boolean) | null>(null);
   
   // Local state for visualizing audio and UI
   const [isLoaded, setIsLoaded] = useState(false);
@@ -47,34 +50,73 @@ const Track: React.FC<TrackProps> = ({ trackNumber }) => {
   useEffect(() => {
     if (!track || !isAudioReady) return;
     
-    // Create player and filter
-    const player = createTrackPlayer(trackNumber, track.segment as SegmentType);
-    const filter = createTrackFilter(linearToFrequency(track.timbre));
+    let isMounted = true;
     
-    // Connect player -> filter -> destination
-    player.disconnect();
-    player.connect(filter);
-    filter.toDestination();
+    // Async function to create and set up the player
+    const setupTrack = async () => {
+      try {
+        // Create player and filter
+        const player = await createTrackPlayer(trackNumber, track.segment as SegmentType);
+        const filter = createTrackFilter(linearToFrequency(track.timbre));
+        
+        // Create mode effect
+        const { effect: modeEffect, update: updateModeEffect } = createModeEffectChain(track.mode);
+        
+        // Only proceed if the component is still mounted
+        if (!isMounted) return;
+        
+        // Connect player -> filter -> mode effect -> destination
+        player.disconnect();
+        player.connect(filter);
+        filter.disconnect();
+        filter.connect(modeEffect);
+        modeEffect.toDestination();
+        
+        // Set volume
+        player.volume.value = linearToDecibels(track.sweep);
+        
+        // Store refs
+        playerRef.current = player;
+        filterRef.current = filter;
+        modeEffectRef.current = modeEffect;
+        modeEffectUpdaterRef.current = updateModeEffect;
+        
+        // Set loaded state
+        setIsLoaded(true);
+        
+        console.log(`Track ${trackNumber} initialized successfully with mode effect`);
+      } catch (error) {
+        console.error(`Error setting up track ${trackNumber}:`, error);
+      }
+    };
     
-    // Set volume
-    player.volume.value = linearToDecibels(track.sweep);
-    
-    // Store refs
-    playerRef.current = player;
-    filterRef.current = filter;
-    
-    // Set loaded state
-    setIsLoaded(true);
+    // Start the setup process
+    setupTrack();
     
     // Cleanup function
     return () => {
-      player.stop();
-      player.dispose();
-      filter.dispose();
-      playerRef.current = null;
-      filterRef.current = null;
+      isMounted = false;
+      
+      if (playerRef.current) {
+        playerRef.current.stop();
+        playerRef.current.dispose();
+        playerRef.current = null;
+      }
+      
+      if (filterRef.current) {
+        filterRef.current.dispose();
+        filterRef.current = null;
+      }
+      
+      if (modeEffectRef.current) {
+        modeEffectRef.current.dispose();
+        modeEffectRef.current = null;
+      }
+      
+      modeEffectUpdaterRef.current = null;
+      setIsLoaded(false);
     };
-  }, [isAudioReady, track, trackNumber]);
+  }, [isAudioReady, track, trackNumber, track?.mode]);
   
   // Handle playback state changes
   useEffect(() => {
@@ -113,6 +155,24 @@ const Track: React.FC<TrackProps> = ({ trackNumber }) => {
     if (!playerRef.current || !track) return;
     playerRef.current.volume.value = linearToDecibels(track.sweep);
   }, [track]);
+  
+  // Handle mode changes
+  useEffect(() => {
+    if (!modeEffectUpdaterRef.current || !track) return;
+    
+    try {
+      // Update the mode effect with the new value
+      const needsRecreation = !modeEffectUpdaterRef.current(track.mode);
+      
+      // If the effect type changed and needs recreation, reinitialize the track
+      if (needsRecreation) {
+        console.log(`Mode effect type changed for track ${trackNumber}, reinitializing`);
+        // The track will be reinitialized by the dependency change in the main effect
+      }
+    } catch (error) {
+      console.error(`Error updating mode effect for track ${trackNumber}:`, error);
+    }
+  }, [track?.mode, trackNumber]);
   
   if (!track) return null;
   
@@ -204,7 +264,14 @@ const Track: React.FC<TrackProps> = ({ trackNumber }) => {
         
         {/* Mode Slider */}
         <div className="flex-1 flex flex-col items-center">
-          <span className="text-sm text-pink-300 mb-1 neon-text">Mode</span>
+          <div className="flex items-center gap-1">
+            <span className="text-sm text-pink-300 mb-1 neon-text">Mode</span>
+            <span className="text-xs text-pink-200 mb-1 opacity-70">
+              {track && isAudioReady ? 
+                `(${getModeEffect(Math.floor(track.mode / 20)).name})` : 
+                ''}
+            </span>
+          </div>
           <input 
             type="range" 
             min="0" 
@@ -213,6 +280,9 @@ const Track: React.FC<TrackProps> = ({ trackNumber }) => {
             onChange={(e) => setTrackMode(track.id, Number(e.target.value))}
             className="w-full"
             disabled={!isAudioReady}
+            title={track && isAudioReady ? 
+              getModeEffect(Math.floor(track.mode / 20)).description : 
+              'Mode effect'}
           />
         </div>
         

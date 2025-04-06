@@ -1,0 +1,9 @@
+{
+  "name": "synthvibe-scripts",
+  "version": "1.0.0",
+  "description": "Scripts for SynthVibe project",
+  "type": "module",
+  "scripts": {
+    "generate-loops": "node generate-loops.js"
+  }
+}

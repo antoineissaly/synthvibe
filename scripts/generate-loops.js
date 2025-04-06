@@ -1,0 +1,469 @@
+// Script to generate synthwave-style audio loops
+// This will create 5 different loops with distinct characteristics
+
+import fs from 'fs';
+import path from 'path';
+import { exec } from 'child_process';
+import { fileURLToPath } from 'url';
+
+// Get the directory name
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Create a directory for the loops if it doesn't exist
+const loopsDir = path.join(__dirname, '../public/audio/loops');
+if (!fs.existsSync(loopsDir)) {
+  fs.mkdirSync(loopsDir, { recursive: true });
+}
+
+// Generate HTML file that will create the audio loops
+const generateHtml = () => {
+  const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Synthwave Loop Generator</title>
+</head>
+<body>
+  <h1>Generating Synthwave Loops...</h1>
+  <div id="status">Initializing...</div>
+  
+  <script>
+    // Set up audio context
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    const sampleRate = audioContext.sampleRate;
+    const duration = 4; // 4 seconds per loop
+    const numSamples = sampleRate * duration;
+    
+    // Status update
+    const status = document.getElementById('status');
+    
+    // Function to generate a loop
+    const generateLoop = (name, params) => {
+      status.textContent = \`Generating \${name}...\`;
+      
+      // Create a buffer for our loop
+      const buffer = audioContext.createBuffer(2, numSamples, sampleRate);
+      
+      // Get the channel data
+      const leftChannel = buffer.getChannelData(0);
+      const rightChannel = buffer.getChannelData(1);
+      
+      // Fill the buffer based on the loop type
+      switch (name) {
+        case 'frenzy':
+          // A fast-paced arpeggio with a driving beat
+          generateFrenzyLoop(leftChannel, rightChannel, params);
+          break;
+        case 'hotline':
+          // A smooth, melodic sequence with retro vibes
+          generateHotlineLoop(leftChannel, rightChannel, params);
+          break;
+        case 'soundcore':
+          // A deep, atmospheric pad with subtle movement
+          generateSoundcoreLoop(leftChannel, rightChannel, params);
+          break;
+        case 'batcave':
+          // A dark, brooding bassline with echoing percussion
+          generateBatcaveLoop(leftChannel, rightChannel, params);
+          break;
+        case 'vibes':
+          // A bright, uplifting chord progression
+          generateVibesLoop(leftChannel, rightChannel, params);
+          break;
+      }
+      
+      // Convert to WAV
+      const wavData = audioBufferToWav(buffer);
+      
+      // Convert to base64 for downloading
+      const base64 = arrayBufferToBase64(wavData);
+      
+      // Create a download link
+      const link = document.createElement('a');
+      link.href = 'data:audio/wav;base64,' + base64;
+      link.download = \`\${name}.wav\`;
+      
+      // Trigger download
+      link.click();
+      
+      return new Promise(resolve => {
+        // Give some time for the download to start
+        setTimeout(resolve, 1000);
+      });
+    };
+    
+    // Generate Frenzy loop - fast arpeggio with driving beat
+    const generateFrenzyLoop = (leftChannel, rightChannel, { bpm = 140 } = {}) => {
+      const beatsPerSecond = bpm / 60;
+      const samplesPerBeat = sampleRate / beatsPerSecond;
+      
+      // Arpeggio notes (A minor scale)
+      const notes = [440, 523.25, 659.25, 880, 659.25, 523.25];
+      
+      // Kick drum pattern (1 = kick, 0 = no kick)
+      const kickPattern = [1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0];
+      
+      // Snare pattern
+      const snarePattern = [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0];
+      
+      // Fill the buffer
+      for (let i = 0; i < leftChannel.length; i++) {
+        const time = i / sampleRate;
+        
+        // Calculate which beat we're on
+        const beatPosition = (time * beatsPerSecond) % 4;
+        const subBeatPosition = (beatPosition * 4) % 16;
+        const subBeatIndex = Math.floor(subBeatPosition);
+        
+        // Arpeggio
+        const noteIndex = Math.floor((time * beatsPerSecond * 2) % notes.length);
+        const note = notes[noteIndex];
+        const arpeggio = Math.sin(2 * Math.PI * note * time) * 0.3;
+        
+        // Kick drum
+        let kick = 0;
+        if (kickPattern[subBeatIndex]) {
+          const kickFreq = 60 * Math.exp(-((i % samplesPerBeat) / samplesPerBeat) * 10);
+          kick = Math.sin(2 * Math.PI * kickFreq * time) * 0.7 * 
+                 Math.exp(-((i % samplesPerBeat) / samplesPerBeat) * 5);
+        }
+        
+        // Snare
+        let snare = 0;
+        if (snarePattern[subBeatIndex]) {
+          snare = (Math.random() * 2 - 1) * 0.5 * 
+                  Math.exp(-((i % samplesPerBeat) / samplesPerBeat) * 3);
+        }
+        
+        // Hi-hat
+        const hihat = ((i % Math.floor(samplesPerBeat / 4)) < 50) ? 
+                      (Math.random() * 2 - 1) * 0.2 * 
+                      Math.exp(-((i % (samplesPerBeat / 4)) / (samplesPerBeat / 4)) * 20) : 0;
+        
+        // Combine all elements
+        leftChannel[i] = Math.tanh(arpeggio + kick + snare + hihat * 0.7);
+        rightChannel[i] = Math.tanh(arpeggio + kick + snare + hihat * 0.3);
+      }
+    };
+    
+    // Generate Hotline loop - smooth, melodic sequence
+    const generateHotlineLoop = (leftChannel, rightChannel, { bpm = 110 } = {}) => {
+      const beatsPerSecond = bpm / 60;
+      const samplesPerBeat = sampleRate / beatsPerSecond;
+      
+      // Chord progression (F major, A minor, D minor, C major)
+      const chords = [
+        [349.23, 440, 523.25], // F major
+        [440, 523.25, 659.25], // A minor
+        [293.66, 349.23, 440], // D minor
+        [261.63, 329.63, 392]  // C major
+      ];
+      
+      // Bass notes
+      const bassNotes = [174.61, 220, 146.83, 130.81];
+      
+      // Fill the buffer
+      for (let i = 0; i < leftChannel.length; i++) {
+        const time = i / sampleRate;
+        
+        // Calculate which beat and chord we're on
+        const beatPosition = (time * beatsPerSecond) % 16;
+        const chordIndex = Math.floor(beatPosition / 4);
+        const chord = chords[chordIndex];
+        const bassNote = bassNotes[chordIndex];
+        
+        // Pad sound (chord)
+        let pad = 0;
+        for (const note of chord) {
+          pad += Math.sin(2 * Math.PI * note * time) * 0.15;
+          // Add some harmonics
+          pad += Math.sin(2 * Math.PI * note * 2 * time) * 0.05;
+        }
+        
+        // Bass
+        const bass = Math.sin(2 * Math.PI * bassNote * time) * 0.4 * 
+                     (1 - Math.pow(((i % samplesPerBeat) / samplesPerBeat), 0.5) * 0.5);
+        
+        // Snare on beats 2 and 4
+        const snare = (Math.floor(beatPosition) === 4 || Math.floor(beatPosition) === 12) ? 
+                      (Math.random() * 2 - 1) * 0.3 * 
+                      Math.exp(-((i % samplesPerBeat) / samplesPerBeat) * 4) : 0;
+        
+        // Combine all elements with some stereo separation
+        leftChannel[i] = Math.tanh(pad * 1.2 + bass + snare * 0.8);
+        rightChannel[i] = Math.tanh(pad * 0.8 + bass + snare * 1.2);
+      }
+    };
+    
+    // Generate Soundcore loop - deep, atmospheric pad
+    const generateSoundcoreLoop = (leftChannel, rightChannel, { bpm = 90 } = {}) => {
+      const beatsPerSecond = bpm / 60;
+      const samplesPerBeat = sampleRate / beatsPerSecond;
+      
+      // Deep pad notes (E minor scale)
+      const baseFreq = 82.41; // E2
+      const intervals = [0, 3, 7, 10, 12, 15, 19]; // E minor scale intervals
+      
+      // Fill the buffer
+      for (let i = 0; i < leftChannel.length; i++) {
+        const time = i / sampleRate;
+        
+        // Slow LFO for pad movement
+        const lfo1 = Math.sin(2 * Math.PI * 0.1 * time) * 0.5 + 0.5;
+        const lfo2 = Math.sin(2 * Math.PI * 0.07 * time) * 0.5 + 0.5;
+        
+        // Atmospheric pad
+        let pad = 0;
+        for (const interval of intervals) {
+          const freq = baseFreq * Math.pow(2, interval / 12);
+          // Use different waveforms
+          pad += Math.sin(2 * Math.PI * freq * time) * 0.1 * lfo1;
+          pad += (Math.sin(2 * Math.PI * freq * 1.01 * time) > 0 ? 0.1 : -0.1) * lfo2 * 0.5;
+        }
+        
+        // Subtle percussion
+        const perc = ((i % Math.floor(samplesPerBeat)) < 100 && 
+                     (Math.floor((time * beatsPerSecond) % 16) % 4 === 0)) ? 
+                     (Math.random() * 2 - 1) * 0.2 * 
+                     Math.exp(-((i % samplesPerBeat) / samplesPerBeat) * 10) : 0;
+        
+        // Combine with stereo width
+        const stereoWidth = Math.sin(2 * Math.PI * 0.05 * time) * 0.2;
+        leftChannel[i] = Math.tanh(pad * (1 + stereoWidth) + perc * 0.7);
+        rightChannel[i] = Math.tanh(pad * (1 - stereoWidth) + perc * 0.3);
+      }
+    };
+    
+    // Generate Batcave loop - dark, brooding bassline
+    const generateBatcaveLoop = (leftChannel, rightChannel, { bpm = 100 } = {}) => {
+      const beatsPerSecond = bpm / 60;
+      const samplesPerBeat = sampleRate / beatsPerSecond;
+      
+      // Dark bassline (C minor)
+      const bassNotes = [130.81, 138.59, 116.54, 130.81];
+      
+      // Echo pattern
+      const echoPattern = [0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1];
+      
+      // Fill the buffer
+      for (let i = 0; i < leftChannel.length; i++) {
+        const time = i / sampleRate;
+        
+        // Calculate which beat we're on
+        const beatPosition = (time * beatsPerSecond) % 16;
+        const subBeatIndex = Math.floor(beatPosition);
+        const bassIndex = Math.floor(beatPosition / 4);
+        
+        // Brooding bassline with some distortion
+        const bassFreq = bassNotes[bassIndex];
+        const bassWave = Math.sin(2 * Math.PI * bassFreq * time);
+        const bass = Math.tanh(bassWave * 3) * 0.4;
+        
+        // Echoing percussion
+        let echo = 0;
+        if (echoPattern[subBeatIndex]) {
+          echo = (Math.random() * 2 - 1) * 0.3 * 
+                 Math.exp(-((i % samplesPerBeat) / samplesPerBeat) * 2);
+        }
+        
+        // Dark pad
+        const padFreq = bassFreq * 2;
+        const pad = Math.sin(2 * Math.PI * padFreq * time) * 0.1 + 
+                    Math.sin(2 * Math.PI * padFreq * 1.5 * time) * 0.05;
+        
+        // Combine with delay effect
+        const mainSignal = bass + echo + pad;
+        const delay = i > sampleRate * 0.25 ? 
+                     leftChannel[i - Math.floor(sampleRate * 0.25)] * 0.4 : 0;
+        
+        leftChannel[i] = Math.tanh(mainSignal + delay * 0.3);
+        rightChannel[i] = Math.tanh(mainSignal + delay * 0.7);
+      }
+    };
+    
+    // Generate Vibes loop - bright, uplifting chord progression
+    const generateVibesLoop = (leftChannel, rightChannel, { bpm = 120 } = {}) => {
+      const beatsPerSecond = bpm / 60;
+      const samplesPerBeat = sampleRate / beatsPerSecond;
+      
+      // Bright chord progression (C major, G major, A minor, F major)
+      const chords = [
+        [261.63, 329.63, 392, 523.25], // C major
+        [392, 493.88, 587.33, 783.99], // G major
+        [440, 523.25, 659.25, 880],    // A minor
+        [349.23, 440, 523.25, 698.46]  // F major
+      ];
+      
+      // Arpeggio pattern
+      const arpeggioPattern = [0, 1, 2, 3, 2, 1, 2, 3];
+      
+      // Fill the buffer
+      for (let i = 0; i < leftChannel.length; i++) {
+        const time = i / sampleRate;
+        
+        // Calculate which beat and chord we're on
+        const beatPosition = (time * beatsPerSecond) % 16;
+        const chordIndex = Math.floor(beatPosition / 4);
+        const chord = chords[chordIndex];
+        
+        // Bright pad
+        let pad = 0;
+        for (const note of chord) {
+          pad += Math.sin(2 * Math.PI * note * time) * 0.1;
+          // Add some shimmer
+          pad += Math.sin(2 * Math.PI * note * 2 * time) * 0.03;
+        }
+        
+        // Arpeggio
+        const arpBeatPos = (time * beatsPerSecond * 2) % 8;
+        const arpIndex = arpeggioPattern[Math.floor(arpBeatPos)];
+        const arpNote = chord[arpIndex % chord.length];
+        const arpeggio = Math.sin(2 * Math.PI * arpNote * time) * 0.2 * 
+                         Math.exp(-((i % (samplesPerBeat / 2)) / (samplesPerBeat / 2)) * 2);
+        
+        // Kick on beats 1 and 3
+        const kick = (Math.floor(beatPosition) === 0 || Math.floor(beatPosition) === 8) ? 
+                     Math.sin(2 * Math.PI * 60 * Math.exp(-((i % samplesPerBeat) / samplesPerBeat) * 10) * time) * 0.5 * 
+                     Math.exp(-((i % samplesPerBeat) / samplesPerBeat) * 5) : 0;
+        
+        // Combine with chorus effect
+        const chorus = Math.sin(2 * Math.PI * 0.1 * time) * 0.01;
+        leftChannel[i] = Math.tanh(pad * (1 + chorus) + arpeggio + kick);
+        rightChannel[i] = Math.tanh(pad * (1 - chorus) + arpeggio + kick);
+      }
+    };
+    
+    // Convert AudioBuffer to WAV format
+    function audioBufferToWav(buffer) {
+      const numChannels = buffer.numberOfChannels;
+      const length = buffer.length * numChannels * 2; // 2 bytes per sample
+      const sampleRate = buffer.sampleRate;
+      
+      const wav = new ArrayBuffer(44 + length);
+      const view = new DataView(wav);
+      
+      // Write WAV header
+      writeString(view, 0, 'RIFF');
+      view.setUint32(4, 36 + length, true);
+      writeString(view, 8, 'WAVE');
+      writeString(view, 12, 'fmt ');
+      view.setUint32(16, 16, true);
+      view.setUint16(20, 1, true);
+      view.setUint16(22, numChannels, true);
+      view.setUint32(24, sampleRate, true);
+      view.setUint32(28, sampleRate * numChannels * 2, true);
+      view.setUint16(32, numChannels * 2, true);
+      view.setUint16(34, 16, true);
+      writeString(view, 36, 'data');
+      view.setUint32(40, length, true);
+      
+      // Write audio data
+      const channels = [];
+      for (let i = 0; i < numChannels; i++) {
+        channels.push(buffer.getChannelData(i));
+      }
+      
+      let offset = 44;
+      for (let i = 0; i < buffer.length; i++) {
+        for (let c = 0; c < numChannels; c++) {
+          const sample = Math.max(-1, Math.min(1, channels[c][i]));
+          view.setInt16(offset, sample < 0 ? sample * 0x8000 : sample * 0x7FFF, true);
+          offset += 2;
+        }
+      }
+      
+      return wav;
+    }
+    
+    // Helper to write strings to DataView
+    function writeString(view, offset, string) {
+      for (let i = 0; i < string.length; i++) {
+        view.setUint8(offset + i, string.charCodeAt(i));
+      }
+    }
+    
+    // Convert ArrayBuffer to base64
+    function arrayBufferToBase64(buffer) {
+      let binary = '';
+      const bytes = new Uint8Array(buffer);
+      for (let i = 0; i < bytes.byteLength; i++) {
+        binary += String.fromCharCode(bytes[i]);
+      }
+      return window.btoa(binary);
+    }
+    
+    // Generate all loops sequentially
+    async function generateAllLoops() {
+      try {
+        await generateLoop('frenzy', { bpm: 140 });
+        status.textContent = 'Generated frenzy.wav';
+        
+        await generateLoop('hotline', { bpm: 110 });
+        status.textContent = 'Generated hotline.wav';
+        
+        await generateLoop('soundcore', { bpm: 90 });
+        status.textContent = 'Generated soundcore.wav';
+        
+        await generateLoop('batcave', { bpm: 100 });
+        status.textContent = 'Generated batcave.wav';
+        
+        await generateLoop('vibes', { bpm: 120 });
+        status.textContent = 'Generated vibes.wav';
+        
+        status.textContent = 'All loops generated! You can close this window.';
+      } catch (error) {
+        status.textContent = 'Error: ' + error.message;
+        console.error(error);
+      }
+    }
+    
+    // Start generating loops when the page loads
+    window.onload = generateAllLoops;
+  </script>
+</body>
+</html>
+  `;
+  
+  const htmlPath = path.join(__dirname, 'loop-generator.html');
+  fs.writeFileSync(htmlPath, html);
+  
+  return htmlPath;
+};
+
+// Main function
+async function main() {
+  console.log('Generating synthwave loops...');
+  
+  // Generate the HTML file
+  const htmlPath = generateHtml();
+  console.log(`Created HTML generator at ${htmlPath}`);
+  
+  // Open the HTML file in the default browser
+  console.log('Opening in browser to generate audio...');
+  
+  // Determine the command based on the platform
+  let command;
+  switch (process.platform) {
+    case 'darwin': // macOS
+      command = `open "${htmlPath}"`;
+      break;
+    case 'win32': // Windows
+      command = `start "" "${htmlPath}"`;
+      break;
+    default: // Linux and others
+      command = `xdg-open "${htmlPath}"`;
+  }
+  
+  exec(command, (error) => {
+    if (error) {
+      console.error(`Error opening browser: ${error}`);
+      return;
+    }
+    
+    console.log('Browser opened. Please save the audio files when prompted.');
+    console.log('After downloading, move the .wav files to public/audio/loops/');
+  });
+}
+
+main().catch(console.error);

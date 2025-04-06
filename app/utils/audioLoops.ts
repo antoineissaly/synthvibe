@@ -1,9 +1,4 @@
 import * as Tone from 'tone';
-import { createLoop1 } from '../../public/audio/synths/loop1';
-import { createLoop2 } from '../../public/audio/synths/loop2';
-import { createLoop3 } from '../../public/audio/synths/loop3';
-import { createLoop4 } from '../../public/audio/synths/loop4';
-import { createLoop5 } from '../../public/audio/synths/loop5';
 
 // Define the available waveform types
 export type WaveformType = 'sine' | 'square' | 'sawtooth' | 'triangle';
@@ -20,43 +15,33 @@ export const segmentNames = {
   'E': 'Vibes'
 };
 
-// Map of segment to loop creator function
-const segmentLoopMap = {
-  'A': createLoop1,
-  'B': createLoop2,
-  'C': createLoop3,
-  'D': createLoop4,
-  'E': createLoop5
+// Map of segment to audio file
+const segmentFileMap = {
+  'A': '/audio/loops/frenzy.wav',
+  'B': '/audio/loops/hotline.wav',
+  'C': '/audio/loops/soundcore.wav',
+  'D': '/audio/loops/batcave.wav',
+  'E': '/audio/loops/vibes.wav'
 };
 
 /**
- * Create a buffer source from the specified loop
+ * Load a buffer from the specified audio file
  * @param segment The segment to load
  * @returns A Tone.js buffer source
  */
-export const createBufferSource = (segment: SegmentType = 'A'): Tone.ToneAudioBuffer => {
+export const createBufferSource = async (segment: SegmentType = 'A'): Promise<Tone.ToneAudioBuffer> => {
   try {
-    console.log(`Creating buffer for segment ${segment}`);
+    console.log(`Loading buffer for segment ${segment}`);
     
-    // Create an offline audio context to generate the buffer
-    const offlineContext = new OfflineAudioContext(2, 44100 * 2, 44100);
+    // Get the appropriate audio file path
+    const filePath = segmentFileMap[segment] || segmentFileMap['A'];
     
-    // Get the appropriate loop creator function
-    const createLoopFn = segmentLoopMap[segment] || segmentLoopMap['A'];
+    // Create a buffer from the audio file
+    const buffer = new Tone.ToneAudioBuffer();
+    await buffer.load(filePath);
     
-    // Create the buffer
-    const buffer = createLoopFn(offlineContext);
-    
-    // Log buffer details for debugging
-    console.log(`Buffer created: channels=${buffer.numberOfChannels}, length=${buffer.length}, sample rate=${buffer.sampleRate}`);
-    
-    // Convert to Tone.js buffer
-    const toneBuffer = new Tone.ToneAudioBuffer().fromArray(
-      [buffer.getChannelData(0), buffer.getChannelData(1)]
-    );
-    
-    console.log('Tone.js buffer created successfully');
-    return toneBuffer;
+    console.log(`Buffer loaded: ${filePath}`);
+    return buffer;
   } catch (error) {
     console.error('Error creating buffer source:', error);
     
@@ -94,25 +79,26 @@ export const createBufferSource = (segment: SegmentType = 'A'): Tone.ToneAudioBu
  * @param segment The segment to load
  * @returns A Tone.Player instance
  */
-export const createTrackPlayer = (
+export const createTrackPlayer = async (
   trackId: number,
   segment: SegmentType = 'A'
-): Tone.Player => {
+): Promise<Tone.Player> => {
   try {
     console.log(`Creating player for track ${trackId} with segment ${segment}`);
     
-    // Get the buffer for this segment
-    const buffer = createBufferSource(segment);
+    // Get the file path for this segment
+    const filePath = segmentFileMap[segment] || segmentFileMap['A'];
     
-    // Create a player with the buffer
+    // Create a player with the audio file
     const player = new Tone.Player({
+      url: filePath,
       loop: true,
       autostart: false,
       volume: -10, // Start at a reasonable volume
     }).toDestination();
     
-    // Set the buffer
-    player.buffer = buffer;
+    // Wait for the player to load
+    await player.load(filePath);
     
     // Apply waveform shaping based on segment
     const waveform = segment === 'A' ? 'sine' : 
