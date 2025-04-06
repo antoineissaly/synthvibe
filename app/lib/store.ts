@@ -9,6 +9,7 @@ interface SynthVibeState {
   isPlaying: boolean;
   bpm: number;
   setAudioReady: (ready: boolean) => void;
+  startAudioContext: () => Promise<void>;
   togglePlayback: () => void;
   setBpm: (bpm: number) => void;
   increaseBpm: () => void;
@@ -57,6 +58,26 @@ export const useSynthVibeStore = create<SynthVibeState>((set) => ({
   isPlaying: false,
   bpm: 120,
   setAudioReady: (ready) => set({ isAudioReady: ready }),
+  startAudioContext: async () => {
+    try {
+      // Import Tone dynamically to avoid SSR issues
+      const Tone = await import('tone');
+      
+      // Start the audio context
+      await Tone.start();
+      console.log('Audio context started');
+      
+      // Update the store
+      set({ isAudioReady: true });
+      
+      // Initialize drop effects
+      const { initializeDropEffects } = await import('../utils/dropEffects');
+      await initializeDropEffects();
+      console.log('Drop effects initialized successfully');
+    } catch (error) {
+      console.error('Failed to start audio context:', error);
+    }
+  },
   togglePlayback: () => set((state) => ({ isPlaying: !state.isPlaying })),
   setBpm: (bpm) => set({ bpm }),
   increaseBpm: () => set((state) => ({ bpm: Math.min(300, state.bpm + 5) })), // Increase by 5, max 300

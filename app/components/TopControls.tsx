@@ -63,8 +63,17 @@ const TopControls: React.FC = () => {
     }
   }, [dropActive]);
   
+  // Get startAudioContext from the store
+  const startAudioContext = useSynthVibeStore(state => state.startAudioContext);
+  
   // Handle playback toggle
-  const handlePlaybackToggle = () => {
+  const handlePlaybackToggle = async () => {
+    // If audio is not ready, initialize it first
+    if (!isAudioReady) {
+      await startAudioContext();
+    }
+    
+    // Toggle playback
     togglePlayback();
   };
   
@@ -127,8 +136,7 @@ const TopControls: React.FC = () => {
     <div className="flex items-center gap-4 mb-8">
       {/* Play Button */}
       <button 
-        className="w-24 h-24 rounded-full border-2 border-cyan-500/50 bg-black/50 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed neon-border glow-effect"
-        disabled={!isAudioReady}
+        className="w-24 h-24 rounded-full border-2 border-cyan-500/50 bg-black/50 flex items-center justify-center neon-border glow-effect"
         onClick={handlePlaybackToggle}
       >
         <div className={`${isPlaying 
