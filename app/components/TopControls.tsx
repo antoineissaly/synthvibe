@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import * as Tone from 'tone';
 import { useSynthVibeStore } from '../lib/store';
 
 /**
@@ -16,13 +17,44 @@ const TopControls: React.FC = () => {
   const triggerBuildUp = useSynthVibeStore(state => state.triggerBuildUp);
   const triggerDrop = useSynthVibeStore(state => state.triggerDrop);
 
+  // Connect playback state to Tone.js transport
+  useEffect(() => {
+    if (!isAudioReady) return;
+    
+    if (isPlaying) {
+      Tone.Transport.start();
+    } else {
+      Tone.Transport.stop();
+    }
+  }, [isPlaying, isAudioReady]);
+  
+  // Connect BPM to Tone.js transport
+  useEffect(() => {
+    if (!isAudioReady) return;
+    Tone.Transport.bpm.value = bpm;
+  }, [bpm, isAudioReady]);
+  
+  // Handle playback toggle
+  const handlePlaybackToggle = () => {
+    togglePlayback();
+  };
+  
+  // Handle BPM changes
+  const handleIncreaseBpm = () => {
+    increaseBpm();
+  };
+  
+  const handleDecreaseBpm = () => {
+    decreaseBpm();
+  };
+
   return (
     <div className="flex items-center gap-4 mb-8">
       {/* Play Button */}
       <button 
         className="w-24 h-24 rounded-full border-2 border-cyan-500/50 bg-black/50 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed neon-border glow-effect"
         disabled={!isAudioReady}
-        onClick={togglePlayback}
+        onClick={handlePlaybackToggle}
       >
         <div className={`${isPlaying 
           ? 'w-4 h-10 bg-cyan-400' 
@@ -39,12 +71,12 @@ const TopControls: React.FC = () => {
         <div className="flex gap-2">
           <button 
             className="w-0 h-0 border-l-8 border-r-8 border-b-12 border-l-transparent border-r-transparent border-b-pink-400 glow-effect"
-            onClick={increaseBpm}
+            onClick={handleIncreaseBpm}
             aria-label="Increase BPM"
           />
           <button 
             className="w-0 h-0 border-l-8 border-r-8 border-t-12 border-l-transparent border-r-transparent border-t-pink-400 glow-effect"
-            onClick={decreaseBpm}
+            onClick={handleDecreaseBpm}
             aria-label="Decrease BPM"
           />
         </div>

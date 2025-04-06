@@ -1,5 +1,14 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import * as Tone from 'tone';
 import { useSynthVibeStore } from '../lib/store';
+import { 
+  createTrackPlayer, 
+  createTrackFilter, 
+  linearToFrequency, 
+  linearToDecibels,
+  WaveformType,
+  SegmentType
+} from '../utils/audioLoops';
 
 interface TrackProps {
   trackNumber: number;
@@ -9,12 +18,91 @@ interface TrackProps {
  * Track component representing a single audio track in the synthwave application
  */
 const Track: React.FC<TrackProps> = ({ trackNumber }) => {
+  // Get track state from the store
   const track = useSynthVibeStore(state => 
     state.tracks.find(t => t.id === trackNumber)
   );
+  const isPlaying = useSynthVibeStore(state => state.isPlaying);
+  const isAudioReady = useSynthVibeStore(state => state.isAudioReady);
+  
+  // Get track actions from the store
   const toggleTrack = useSynthVibeStore(state => state.toggleTrack);
+  const setTrackSegment = useSynthVibeStore(state => state.setTrackSegment);
+  const setTrackWaveform = useSynthVibeStore(state => state.setTrackWaveform);
+  const setTrackTimbre = useSynthVibeStore(state => state.setTrackTimbre);
+  const setTrackMode = useSynthVibeStore(state => state.setTrackMode);
+  const setTrackSweep = useSynthVibeStore(state => state.setTrackSweep);
+  
+  // Refs to store Tone.js objects
+  const playerRef = useRef<Tone.Player | null>(null);
+  const filterRef = useRef<Tone.Filter | null>(null);
+  
+  // Local state for visualizing audio
+  const [isLoaded, setIsLoaded] = useState(false);
+  
+  // Initialize audio for this track
+  useEffect(() => {
+    if (!track || !isAudioReady) return;
+    
+    // Create player and filter
+    const player = createTrackPlayer(trackNumber, track.segment as SegmentType);
+    const filter = createTrackFilter(linearToFrequency(track.timbre));
+    
+    // Connect player -> filter -> destination
+    player.disconnect();
+    player.connect(filter);
+    filter.toDestination();
+    
+    // Set volume
+    player.volume.value = linearToDecibels(track.sweep);
+    
+    // Store refs
+    playerRef.current = player;
+    filterRef.current = filter;
+    
+    // Set loaded state
+    setIsLoaded(true);
+    
+    // Cleanup function
+    return () => {
+      player.stop();
+      player.dispose();
+      filter.dispose();
+      playerRef.current = null;
+      filterRef.current = null;
+    };
+  }, [isAudioReady, track, trackNumber]);
+  
+  // Handle playback state changes
+  useEffect(() => {
+    if (!playerRef.current || !isLoaded || !track) return;
+    
+    if (isPlaying && track.isActive && !track.isMuted) {
+      playerRef.current.start();
+    } else {
+      playerRef.current.stop();
+    }
+  }, [isPlaying, track, isLoaded]);
+  
+  // Handle filter (timbre) changes
+  useEffect(() => {
+    if (!filterRef.current || !track) return;
+    filterRef.current.frequency.value = linearToFrequency(track.timbre);
+  }, [track]);
+  
+  // Handle volume (sweep) changes
+  useEffect(() => {
+    if (!playerRef.current || !track) return;
+    playerRef.current.volume.value = linearToDecibels(track.sweep);
+  }, [track]);
   
   if (!track) return null;
+  
+  // Available waveform types
+  const waveformTypes: WaveformType[] = ['sine', 'square', 'sawtooth', 'triangle'];
+  
+  // Available segments
+  const segments: SegmentType[] = ['A', 'B', 'C'];
   
   return (
     <div className="border border-purple-500/30 bg-black/30 rounded-lg p-4 mb-4 flex flex-col neon-border">
@@ -26,31 +114,56 @@ const Track: React.FC<TrackProps> = ({ trackNumber }) => {
               ? 'bg-cyan-900/30 border-cyan-400/70 neon-border' 
               : 'bg-black/50 border-gray-500/50'}`}
           onClick={() => toggleTrack(track.id)}
+          disabled={!isAudioReady}
         >
           <span className={`font-medium ${track.isActive ? 'text-cyan-300 neon-text' : 'text-gray-400'}`}>ON</span>
         </button>
         
         {/* Segment Selector */}
         <div className="w-40 h-16 border border-pink-500/50 bg-black/50 rounded-md flex items-center justify-center">
-          <span className="text-pink-300">Segment</span>
+          <select 
+            className="bg-transparent text-pink-300 border-none outline-none w-full text-center"
+            value={track.segment}
+            onChange={(e) => setTrackSegment(track.id, e.target.value as SegmentType)}
+            disabled={!isAudioReady}
+          >
+            {segments.map(segment => (
+              <option key={segment} value={segment} className="bg-gray-900">
+                Segment {segment}
+              </option>
+            ))}
+          </select>
         </div>
         
-        {/* Waveform Visualizer */}
-        <div className="flex-1 h-16 border border-purple-500/50 bg-black/50 rounded-md flex items-center justify-center">
-          <span className="text-purple-300 text-sm">Waveform (see the waveform visually)</span>
+        {/* Waveform Selector */}
+        <div className="flex-1 h-16 border border-purple-500/50 bg-black/50 rounded-md flex items-center justify-center gap-2">
+          {waveformTypes.map(type => (
+            <button
+              key={type}
+              className={`px-3 py-1 rounded ${track.waveform === type 
+                ? 'bg-purple-900 text-purple-200 neon-text' 
+                : 'bg-black/30 text-purple-300 hover:bg-purple-900/30'}`}
+              onClick={() => setTrackWaveform(track.id, type)}
+              disabled={!isAudioReady}
+            >
+              {type.charAt(0).toUpperCase() + type.slice(1)}
+            </button>
+          ))}
         </div>
       </div>
       
       <div className="flex justify-between gap-4">
-        {/* Timbre Slider */}
+        {/* Timbre Slider (Filter Cutoff) */}
         <div className="flex-1 flex flex-col items-center">
           <span className="text-sm text-cyan-300 mb-1 neon-text">Timbre</span>
           <input 
             type="range" 
             min="0" 
             max="100" 
-            defaultValue="50"
+            value={track.timbre}
+            onChange={(e) => setTrackTimbre(track.id, Number(e.target.value))}
             className="w-full"
+            disabled={!isAudioReady}
           />
         </div>
         
@@ -61,20 +174,24 @@ const Track: React.FC<TrackProps> = ({ trackNumber }) => {
             type="range" 
             min="0" 
             max="100" 
-            defaultValue="50"
+            value={track.mode}
+            onChange={(e) => setTrackMode(track.id, Number(e.target.value))}
             className="w-full"
+            disabled={!isAudioReady}
           />
         </div>
         
-        {/* Sweep Slider */}
+        {/* Sweep Slider (Volume) */}
         <div className="flex-1 flex flex-col items-center">
           <span className="text-sm text-purple-300 mb-1 neon-text">Sweep</span>
           <input 
             type="range" 
             min="0" 
             max="100" 
-            defaultValue="50"
+            value={track.sweep}
+            onChange={(e) => setTrackSweep(track.id, Number(e.target.value))}
             className="w-full"
+            disabled={!isAudioReady}
           />
         </div>
       </div>

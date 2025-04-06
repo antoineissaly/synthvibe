@@ -1,5 +1,7 @@
 import { create } from 'zustand';
 
+import { WaveformType, SegmentType } from '../utils/audioLoops';
+
 // Define the store state interface
 interface SynthVibeState {
   // Audio state
@@ -19,7 +21,8 @@ interface SynthVibeState {
     isActive: boolean;
     isMuted: boolean;
     isSolo: boolean;
-    segment: string;
+    segment: SegmentType;
+    waveform: WaveformType;
     timbre: number;
     mode: number;
     sweep: number;
@@ -29,7 +32,8 @@ interface SynthVibeState {
   toggleTrack: (trackId: number) => void;
   muteTrack: (trackId: number) => void;
   soloTrack: (trackId: number) => void;
-  setTrackSegment: (trackId: number, segment: string) => void;
+  setTrackSegment: (trackId: number, segment: SegmentType) => void;
+  setTrackWaveform: (trackId: number, waveform: WaveformType) => void;
   setTrackTimbre: (trackId: number, value: number) => void;
   setTrackMode: (trackId: number, value: number) => void;
   setTrackSweep: (trackId: number, value: number) => void;
@@ -57,11 +61,11 @@ export const useSynthVibeStore = create<SynthVibeState>((set) => ({
   
   // Initial tracks
   tracks: [
-    { id: 1, name: 'Track 1', isActive: true, isMuted: false, isSolo: false, segment: 'A', timbre: 50, mode: 50, sweep: 50 },
-    { id: 2, name: 'Track 2', isActive: true, isMuted: false, isSolo: false, segment: 'A', timbre: 50, mode: 50, sweep: 50 },
-    { id: 3, name: 'Track 3', isActive: true, isMuted: false, isSolo: false, segment: 'A', timbre: 50, mode: 50, sweep: 50 },
-    { id: 4, name: 'Track 4', isActive: true, isMuted: false, isSolo: false, segment: 'A', timbre: 50, mode: 50, sweep: 50 },
-    { id: 5, name: 'Track 5', isActive: true, isMuted: false, isSolo: false, segment: 'A', timbre: 50, mode: 50, sweep: 50 },
+    { id: 1, name: 'Track 1', isActive: true, isMuted: false, isSolo: false, segment: 'A', waveform: 'sine', timbre: 50, mode: 50, sweep: 50 },
+    { id: 2, name: 'Track 2', isActive: true, isMuted: false, isSolo: false, segment: 'A', waveform: 'sine', timbre: 50, mode: 50, sweep: 50 },
+    { id: 3, name: 'Track 3', isActive: true, isMuted: false, isSolo: false, segment: 'A', waveform: 'sine', timbre: 50, mode: 50, sweep: 50 },
+    { id: 4, name: 'Track 4', isActive: true, isMuted: false, isSolo: false, segment: 'A', waveform: 'sine', timbre: 50, mode: 50, sweep: 50 },
+    { id: 5, name: 'Track 5', isActive: true, isMuted: false, isSolo: false, segment: 'A', waveform: 'sine', timbre: 50, mode: 50, sweep: 50 },
   ],
   
   // Track actions
@@ -117,6 +121,14 @@ export const useSynthVibeStore = create<SynthVibeState>((set) => ({
     tracks: state.tracks.map(track => 
       track.id === trackId 
         ? { ...track, sweep: value } 
+        : track
+    )
+  })),
+  
+  setTrackWaveform: (trackId, waveform) => set((state) => ({
+    tracks: state.tracks.map(track => 
+      track.id === trackId 
+        ? { ...track, waveform } 
         : track
     )
   })),
