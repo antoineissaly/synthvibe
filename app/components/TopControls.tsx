@@ -20,28 +20,30 @@ const TopControls: React.FC = () => {
     <div className="flex items-center gap-4 mb-8">
       {/* Play Button */}
       <button 
-        className="w-24 h-24 rounded-full border-2 border-gray-300 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed"
+        className="w-24 h-24 rounded-full border-2 border-cyan-500/50 bg-black/50 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed neon-border glow-effect"
         disabled={!isAudioReady}
         onClick={togglePlayback}
       >
-        <div className={`${isPlaying ? 'w-4 h-10 bg-gray-700' : 'w-0 h-0 border-t-8 border-b-8 border-l-12 border-t-transparent border-b-transparent border-l-gray-700 ml-1'}`}>
+        <div className={`${isPlaying 
+          ? 'w-4 h-10 bg-cyan-400' 
+          : 'w-0 h-0 border-t-8 border-b-8 border-l-12 border-t-transparent border-b-transparent border-l-cyan-400 ml-1'}`}>
           {isPlaying && <span className="sr-only">Pause</span>}
           {!isPlaying && <span className="sr-only">Play</span>}
         </div>
       </button>
       
       {/* BPM Controls */}
-      <div className="border-2 border-gray-300 rounded-md p-2 flex flex-col items-center">
-        <div className="text-gray-700 text-sm font-medium mb-1">BPM (tempo)</div>
-        <div className="text-xl font-bold text-gray-800 mb-1">{bpm}</div>
+      <div className="border-2 border-pink-500/50 bg-black/50 rounded-md p-2 flex flex-col items-center neon-border">
+        <div className="text-pink-300 text-sm font-medium mb-1 neon-text">BPM (tempo)</div>
+        <div className="text-xl font-bold text-white mb-1">{bpm}</div>
         <div className="flex gap-2">
           <button 
-            className="w-0 h-0 border-l-8 border-r-8 border-b-12 border-l-transparent border-r-transparent border-b-gray-700"
+            className="w-0 h-0 border-l-8 border-r-8 border-b-12 border-l-transparent border-r-transparent border-b-pink-400 glow-effect"
             onClick={increaseBpm}
             aria-label="Increase BPM"
           />
           <button 
-            className="w-0 h-0 border-l-8 border-r-8 border-t-12 border-l-transparent border-r-transparent border-t-gray-700"
+            className="w-0 h-0 border-l-8 border-r-8 border-t-12 border-l-transparent border-r-transparent border-t-pink-400 glow-effect"
             onClick={decreaseBpm}
             aria-label="Decrease BPM"
           />
@@ -49,36 +51,36 @@ const TopControls: React.FC = () => {
       </div>
       
       {/* Loop Visualizer */}
-      <div className="flex-1 border-2 border-gray-300 rounded-md h-24 flex items-center justify-center">
-        <span className="text-gray-500">Loop visualizer</span>
+      <div className="flex-1 border-2 border-purple-500/50 bg-black/50 rounded-md h-24 flex items-center justify-center neon-border">
+        <span className="text-purple-300 neon-text">Loop visualizer</span>
       </div>
       
       {/* BUILD UP Button */}
       <button 
-        className={`w-24 h-24 rounded-full border-2 flex items-center justify-center font-bold text-sm
+        className={`w-24 h-24 rounded-full border-2 flex items-center justify-center font-bold text-sm glow-effect
           ${buildUpActive 
-            ? 'bg-green-100 border-green-500 text-green-700' 
-            : 'bg-white border-gray-300 text-gray-700 hover:border-gray-400'
+            ? 'bg-green-900/50 border-green-400 text-green-300 neon-border' 
+            : 'bg-black/50 border-cyan-500/50 text-cyan-300 hover:border-cyan-400'
           }
           transition-colors disabled:opacity-50 disabled:cursor-not-allowed`}
         disabled={!isAudioReady}
         onClick={triggerBuildUp}
       >
-        BUILD UP
+        <span className={buildUpActive ? 'neon-text' : ''}>BUILD UP</span>
       </button>
       
       {/* DROP Button */}
       <button 
-        className={`w-24 h-24 rounded-full border-2 flex items-center justify-center font-bold text-sm
+        className={`w-24 h-24 rounded-full border-2 flex items-center justify-center font-bold text-sm glow-effect
           ${dropActive 
-            ? 'bg-red-100 border-red-500 text-red-700' 
-            : 'bg-white border-gray-300 text-gray-700 hover:border-gray-400'
+            ? 'bg-red-900/50 border-red-400 text-red-300 neon-border' 
+            : 'bg-black/50 border-pink-500/50 text-pink-300 hover:border-pink-400'
           }
           transition-colors disabled:opacity-50 disabled:cursor-not-allowed`}
         disabled={!isAudioReady}
         onClick={triggerDrop}
       >
-        DROP
+        <span className={dropActive ? 'neon-text' : ''}>DROP</span>
       </button>
     </div>
   );

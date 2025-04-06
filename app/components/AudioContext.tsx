@@ -20,14 +20,14 @@ const AudioContext: React.FC = () => {
       {!isAudioStarted ? (
         <button
           onClick={startAudio}
-          className="bg-blue-500 hover:bg-blue-600 text-white text-xs py-1 px-2 rounded shadow transition-colors"
+          className="bg-pink-600 hover:bg-pink-700 text-white text-xs py-1 px-3 rounded shadow-lg transition-colors glow-effect"
         >
           Enable Audio
         </button>
       ) : (
-        <div className="flex items-center gap-1 bg-green-100 py-1 px-2 rounded text-xs text-green-800">
+        <div className="flex items-center gap-1 bg-black/50 border border-green-500/50 py-1 px-3 rounded text-xs text-green-300 neon-border">
           <span className="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
-          <span>Audio Ready</span>
+          <span className="neon-text">Audio Ready</span>
         </div>
       )}
     </>

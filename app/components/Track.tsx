@@ -17,31 +17,34 @@ const Track: React.FC<TrackProps> = ({ trackNumber }) => {
   if (!track) return null;
   
   return (
-    <div className="border border-gray-300 rounded-lg p-4 mb-4 flex flex-col">
+    <div className="border border-purple-500/30 bg-black/30 rounded-lg p-4 mb-4 flex flex-col neon-border">
       <div className="flex items-center gap-4 mb-4">
         {/* ON Toggle */}
         <button 
-          className={`w-20 h-16 flex items-center justify-center border ${track.isActive ? 'bg-green-100 border-green-500' : 'bg-gray-100 border-gray-300'} rounded-md`}
+          className={`w-20 h-16 flex items-center justify-center border rounded-md glow-effect
+            ${track.isActive 
+              ? 'bg-cyan-900/30 border-cyan-400/70 neon-border' 
+              : 'bg-black/50 border-gray-500/50'}`}
           onClick={() => toggleTrack(track.id)}
         >
-          <span className={`font-medium ${track.isActive ? 'text-green-700' : 'text-gray-500'}`}>ON</span>
+          <span className={`font-medium ${track.isActive ? 'text-cyan-300 neon-text' : 'text-gray-400'}`}>ON</span>
         </button>
         
         {/* Segment Selector */}
-        <div className="w-40 h-16 border border-gray-300 rounded-md flex items-center justify-center">
-          <span className="text-gray-700">Segment</span>
+        <div className="w-40 h-16 border border-pink-500/50 bg-black/50 rounded-md flex items-center justify-center">
+          <span className="text-pink-300">Segment</span>
         </div>
         
         {/* Waveform Visualizer */}
-        <div className="flex-1 h-16 border border-gray-300 rounded-md flex items-center justify-center">
-          <span className="text-gray-500 text-sm">Waveform (see the waveform visually)</span>
+        <div className="flex-1 h-16 border border-purple-500/50 bg-black/50 rounded-md flex items-center justify-center">
+          <span className="text-purple-300 text-sm">Waveform (see the waveform visually)</span>
         </div>
       </div>
       
       <div className="flex justify-between gap-4">
         {/* Timbre Slider */}
         <div className="flex-1 flex flex-col items-center">
-          <span className="text-sm text-gray-700 mb-1">Timbre</span>
+          <span className="text-sm text-cyan-300 mb-1 neon-text">Timbre</span>
           <input 
             type="range" 
             min="0" 
@@ -53,7 +56,7 @@ const Track: React.FC<TrackProps> = ({ trackNumber }) => {
         
         {/* Mode Slider */}
         <div className="flex-1 flex flex-col items-center">
-          <span className="text-sm text-gray-700 mb-1">Mode</span>
+          <span className="text-sm text-pink-300 mb-1 neon-text">Mode</span>
           <input 
             type="range" 
             min="0" 
@@ -65,7 +68,7 @@ const Track: React.FC<TrackProps> = ({ trackNumber }) => {
         
         {/* Sweep Slider */}
         <div className="flex-1 flex flex-col items-center">
-          <span className="text-sm text-gray-700 mb-1">Sweep</span>
+          <span className="text-sm text-purple-300 mb-1 neon-text">Sweep</span>
           <input 
             type="range" 
             min="0" 
